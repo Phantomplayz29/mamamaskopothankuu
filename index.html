@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pamasko RNG 🎄</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a472a 0%, #0a1f14 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* Animated background particles */
+        .particle {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 215, 0, 0.4);
+            border-radius: 50%;
+            animation: float 6s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) translateX(0) scale(1);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(50px) scale(0);
+            }
+        }
+
+        /* Snowflakes */
+        .snowflake {
+            position: fixed;
+            top: -10px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 20px;
+            animation: fall linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 30px;
+            padding: 40px 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            z-index: 2;
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #1a472a;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            50% {
+                text-shadow: 2px 2px 20px rgba(26, 71, 42, 0.4);
+            }
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .slot-machine {
+            background: linear-gradient(145deg, #2d5a3d, #1a472a);
+            border-radius: 20px;
+            padding: 40px 20px;
+            margin-bottom: 30px;
+            box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slot-machine::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% {
+                transform: translateX(-100%) translateY(-100%) rotate(45deg);
+            }
+            100% {
+                transform: translateX(100%) translateY(100%) rotate(45deg);
+            }
+        }
+
+        .amount-display {
+            font-size: 4em;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+            position: relative;
+            z-index: 1;
+            transition: transform 0.3s;
+        }
+
+        .amount-display.spinning {
+            animation: spinBlur 0.1s linear infinite;
+        }
+
+        @keyframes spinBlur {
+            0% {
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+            }
+            50% {
+                transform: translateY(-10px) scale(1.1);
+                filter: blur(5px);
+            }
+            100% {
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        .amount-display.final {
+            animation: bounce 0.6s ease-out;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.3);
+            }
+        }
+
+        .spin-button {
+            background: linear-gradient(145deg, #c41e3a, #a01729);
+            color: white;
+            border: none;
+            padding: 20px 60px;
+            font-size: 1.4em;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 6px 20px rgba(196, 30, 58, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .spin-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .spin-button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .spin-button:hover:not(:disabled) {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 10px 30px rgba(196, 30, 58, 0.6);
+        }
+
+        .spin-button:active:not(:disabled) {
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .spin-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Sparkles */
+        .sparkle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ffd700;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: sparkleFloat 1s ease-out forwards;
+        }
+
+        @keyframes sparkleFloat {
+            0% {
+                transform: translate(0, 0) scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--x), var(--y)) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        .message {
+            font-size: 1.3em;
+            color: #1a472a;
+            margin-top: 25px;
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease-out;
+        }
+
+        .message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .message-line {
+            font-style: italic;
+        }
+
+        .disclaimer {
+            font-size: 0.9em;
+            color: #999;
+            margin-top: 20px;
+        }
+
+        .gcash-section {
+            margin-top: 30px;
+            padding: 30px;
+            background: linear-gradient(145deg, #007dff, #0056b3);
+            border-radius: 20px;
+            color: white;
+            opacity: 0;
+            transform: scale(0.8) rotateX(90deg);
+            transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 10px 30px rgba(0, 125, 255, 0.3);
+        }
+
+        .gcash-section.show {
+            opacity: 1;
+            transform: scale(1) rotateX(0);
+        }
+
+        .gcash-section h3 {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .qr-container {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            margin: 20px auto;
+            max-width: 250px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            animation: rotateIn 0.8s ease-out;
+        }
+
+        @keyframes rotateIn {
+            from {
+                transform: rotate(-180deg) scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: rotate(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .qr-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 10px;
+        }
+
+        .gcash-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            letter-spacing: 3px;
+            backdrop-filter: blur(10px);
+            animation: slideInLeft 0.6s ease-out 0.3s both;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .christmas-message {
+            font-size: 1.15em;
+            margin-top: 20px;
+            font-style: italic;
+            line-height: 1.6;
+            animation: fadeInUp 0.6s ease-out 0.5s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .credits {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .credits strong {
+            color: #1a472a;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2em;
+            }
+            .amount-display {
+                font-size: 3em;
+            }
+            .spin-button {
+                padding: 16px 40px;
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎰 Pamasko RNG 🎄</h1>
+        <p class="subtitle">Spin the Pamasko Generator</p>
+        
+        <div class="slot-machine">
+            <div class="amount-display" id="display">?</div>
+        </div>
+        
+        <button class="spin-button" id="spinBtn">SPIN NOW</button>
+        
+        <div class="message" id="message"></div>
+        
+        <p class="disclaimer">You didn't ask. The computer did. 😌</p>
+
+        <div class="gcash-section" id="gcashSection">
+            <h3>💙 Send your Pamasko here! 💙</h3>
+            
+            <div class="qr-container">
+                <img src="qrcode.jpg" alt="GCash QR Code">
+            </div>
+            
+            <div class="gcash-number">0919 802 1840</div>
+            
+            <div class="christmas-message">
+                🎄 Merry Christmas po! 🎁<br>
+                Wishing you joy, love, and blessings this holiday season! Thank youuu!
+            </div>
+        </div>
+
+        <div class="credits">
+            Coded & Designed by <strong>Simone Monroyo</strong> 🎨✨
+        </div>
+    </div>
+
+    <script>
+        const amounts = [100, 100, 200, 200, 500, 500, 1000];
+        const display = document.getElementById('display');
+        const message = document.getElementById('message');
+        const button = document.getElementById('spinBtn');
+        const gcashSection = document.getElementById('gcashSection');
+
+        // Create particles
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 2 + 's';
+            particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
+            document.body.appendChild(particle);
+            setTimeout(() => particle.remove(), 6000);
+        }
+
+        setInterval(createParticle, 300);
+
+        // Create snowflakes
+        function createSnowflake() {
+            const snowflake = document.createElement('div');
+            snowflake.classList.add('snowflake');
+            snowflake.innerHTML = '❄';
+            snowflake.style.left = Math.random() * 100 + '%';
+            snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
+            snowflake.style.opacity = Math.random();
+            document.body.appendChild(snowflake);
+            setTimeout(() => snowflake.remove(), 5000);
+        }
+
+        setInterval(createSnowflake, 200);
+
+        // Create sparkles
+        function createSparkles(element) {
+            const rect = element.getBoundingClientRect();
+            for (let i = 0; i < 20; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.classList.add('sparkle');
+                const angle = (Math.PI * 2 * i) / 20;
+                const distance = 60 + Math.random() * 40;
+                sparkle.style.left = rect.left + rect.width / 2 + 'px';
+                sparkle.style.top = rect.top + rect.height / 2 + 'px';
+                sparkle.style.setProperty('--x', Math.cos(angle) * distance + 'px');
+                sparkle.style.setProperty('--y', Math.sin(angle) * distance + 'px');
+                document.body.appendChild(sparkle);
+                setTimeout(() => sparkle.remove(), 1000);
+            }
+        }
+
+        // Spin function
+        button.addEventListener('click', function() {
+            button.disabled = true;
+            message.classList.remove('show');
+            message.innerHTML = '';
+            gcashSection.classList.remove('show');
+            
+            display.classList.remove('final');
+            display.classList.add('spinning');
+            
+            let counter = 0;
+            const maxSpins = 30;
+            
+            const spinInterval = setInterval(function() {
+                const randomAmount = amounts[Math.floor(Math.random() * amounts.length)];
+                display.textContent = '₱' + randomAmount;
+                counter++;
+                
+                if (counter >= maxSpins) {
+                    clearInterval(spinInterval);
+                    display.classList.remove('spinning');
+                    
+                    const finalAmount = amounts[Math.floor(Math.random() * amounts.length)];
+                    display.textContent = '₱' + finalAmount;
+                    display.classList.add('final');
+                    
+                    createSparkles(display);
+                    
+                    setTimeout(function() {
+                        message.innerHTML = `
+                            <div class="message-line"><strong>The code has decided 😌</strong></div>
+                            <div class="message-line">You didn't ask. The computer did.</div>
+                        `;
+                        message.classList.add('show');
+                        
+                        setTimeout(function() {
+                            gcashSection.classList.add('show');
+                            button.disabled = false;
+                        }, 800);
+                    }, 500);
+                }
+            }, 100);
+        });
+    </script>
+</body>
+</html>
